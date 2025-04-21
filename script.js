@@ -230,7 +230,7 @@ function renderCatalogue() {
   catalogue.innerHTML = '';
   let items = [];
 
-  // Category filter (attach category property)
+  // 1) Category filter
   if (currentCategory === 'all') {
     data.forEach(sec => {
       items = items.concat(
@@ -243,96 +243,133 @@ function renderCatalogue() {
       items = sec.items.map(item => ({ ...item, category: sec.category }));
     }
   }
-  if (selectedType&& selectedType !== 'all') {
-    items = items.filter(item => (item.type || '').toLowerCase() === selectedType.toLowerCase());
+
+  // 2) Type filter
+  if (selectedType && selectedType !== 'all') {
+    items = items.filter(item =>
+      (item.type || '').toLowerCase() === selectedType.toLowerCase()
+    );
   }
-  // Multi‑field Google‑like AND‑search + original filtering logic
-  let tokens = [];
+
+  // 3) Free‑text (and numeric) search
   if (searchTerm) {
     const term = searchTerm.toLowerCase().trim();
-    tokens = term.split(/\s+/);
+    const tokens = term.split(/\s+/);
+
     items = items.filter(item => {
-      const texts = tokens.filter(t => isNaN(parseFloat(t)));
-      const numbers = tokens
-        .map(t => parseFloat(t))
-        .filter(n => !isNaN(n));
+      const title = item.title.toLowerCase();
+      const desc  = item.description.toLowerCase();
+      const cat   = item.category.toLowerCase();
+      const link  = (item.link || '').toLowerCase();
 
-      const itemFields = [
-        item.title.toLowerCase(),
-        item.description.toLowerCase(),
-        item.category.toLowerCase(),
-        item.link.toLowerCase()
-      ];
+      // numeric bounds for this item
+      const pMin = item.minPrice;
+      const pMax = item.maxPrice != null ? item.maxPrice : pMin;
+      const aMin = item.minArea;
+      const aMax = item.maxArea  != null ? item.maxArea  : aMin;
 
-      const textOk = texts.every(t =>
-        itemFields.some(field => field.includes(t))
-      );
-
-      const numberOk = numbers.every(num => {
-        const inPriceRange = (
-          item.minPrice <= num && (item.maxPrice ?? item.minPrice) >= num
+      return tokens.every(tok => {
+        // 1) text match?
+        const textMatch = (
+          title.includes(tok) ||
+          desc.includes(tok)  ||
+          cat.includes(tok)   ||
+          link.includes(tok)
         );
-        const inAreaRange = (
-          item.minArea <= num && (item.maxArea ?? item.minArea) >= num
-        );
-        return inPriceRange || inAreaRange;
+
+        // 2) is it a unit‑suffixed numeric? (e.g. 30M, 300m2)
+        const uPrice = tok.match(/^(\d+(?:\.\d+)?)(M)$/i);
+        const uArea  = tok.match(/^(\d+(?:\.\d+)?)(m2|m\^2|sqm)$/i);
+        if (uPrice) {
+          const val = parseFloat(uPrice[1]);
+          return textMatch || (val >= pMin && val <= pMax);
+        }
+        if (uArea) {
+          const val = parseFloat(uArea[1]) * 10.7639; // m²→sqft
+          return textMatch || (val >= aMin && val <= aMax);
+        }
+
+        // 3) bare number?
+        const num = parseFloat(tok);
+        if (!isNaN(num)) {
+          // if it appears in text, treat as text-match
+          if (textMatch) return true;
+          // otherwise treat as numeric filter against both price & area
+          const inPrice = (num >= pMin && num <= pMax);
+          const inArea  = (num >= aMin && num <= aMax);
+          return inPrice || inArea;
+        }
+
+        // 4) pure text token
+        return textMatch;
       });
-
-      return textOk && numberOk;
     });
 
-    // Custom sorting by priority (only changes order, not filtering)
+    // 4) Scoring & sort (unchanged)
     items.forEach(item => {
       let score = 0;
       const title = item.title.toLowerCase();
-      const desc = item.description.toLowerCase();
+      const desc  = item.description.toLowerCase();
       const category = item.category.toLowerCase();
-      const type = item.type?.toLowerCase?.() ?? '';
-      const link = item.link.toLowerCase();
+      const type     = (item.type || '').toLowerCase();
+      const link     = (item.link || '').toLowerCase();
 
       tokens.forEach(t => {
-        if (title === t) score += 50;
+        if (title === t)           score += 50;
         else if (title.includes(t)) score += 40;
-        if (category.includes(t)) score += 30;
-        if (type.includes(t)) score += 30;
-        if (desc.includes(t)) score += 20;
-        if (link.includes(t)) score += 10;
+        if (category.includes(t))  score += 30;
+        if (type.includes(t))      score += 30;
+        if (desc.includes(t))      score += 20;
+        if (link.includes(t))      score += 10;
+        
+        // numeric scoring (if numeric token and not text-matched)
+        const num = parseFloat(t);
+        if (!isNaN(num) && !title.includes(t) && !desc.includes(t)) {
+          if (num >= item.minPrice && num <= (item.maxPrice||item.minPrice)) {
+            score += 3;
+          }
+          const areaMax = item.maxArea||item.minArea;
+          if (num >= item.minArea && num <= areaMax) {
+            score += 2;
+          }
+        }
       });
 
       item._score = score;
     });
 
-    items.sort((a, b) => (b._score ?? 0) - (a._score ?? 0));
+    items.sort((a, b) => (b._score || 0) - (a._score || 0));
   }
 
-  // Price filters
+  // 5) Price widget filters (unchanged)
   if (minPrice !== null || maxPrice !== null) {
     items = items.filter(i => {
-      const itemMin = i.minPrice;
-      const itemMax = i.maxPrice != null ? i.maxPrice : i.minPrice;
+      const iMin = i.minPrice;
+      const iMax = i.maxPrice != null ? i.maxPrice : i.minPrice;
       const fMin = minPrice != null ? minPrice : -Infinity;
       const fMax = maxPrice != null ? maxPrice : Infinity;
-      return itemMax >= fMin && itemMin <= fMax;
+      return iMax >= fMin && iMin <= fMax;
     });
   }
 
-  // Area filters
+  // 6) Area widget filters (unchanged)
   if (minArea !== null || maxArea !== null) {
     items = items.filter(i => {
-      const itemMin = i.minArea;
-      const itemMax = i.maxArea != null ? i.maxArea : i.minArea;
+      const iMin = i.minArea;
+      const iMax = i.maxArea != null ? i.maxArea : i.minArea;
       const fMin = minArea != null ? minArea : -Infinity;
       const fMax = maxArea != null ? maxArea : Infinity;
-      return itemMax >= fMin && itemMin <= fMax;
+      return iMax >= fMin && iMin <= fMax;
     });
   }
 
-  // Final fallback alphabetical sort (only if no search term)
+  // 7) Fallback alphabetical sort (unchanged)
   if (!searchTerm) {
     items.sort((a, b) => a.title.localeCompare(b.title));
   }
 
-  // Render cards
+  // 8) Render cards (unchanged)
+  catalogue.innerHTML = '';
   items.forEach(item => {
     const link = document.createElement("a");
     link.className = "card";
@@ -353,6 +390,7 @@ function renderCatalogue() {
     catalogue.appendChild(link);
   });
 }
+
 
 
 // Category buttons
