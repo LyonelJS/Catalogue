@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catalogue with Banner</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- Banner with Search Bar Inside -->
+    <div class="banner" id="banner">
+      <div class="search-bar" id="search-bar">
+        <div class="search-box">
+          <input
+            type="text"
+            id="search"
+            placeholder="Search..."
+            oninput="searchItems()"
+          />
+          <button type="button" id="clear-search" onclick="clearSearch()">×</button>
+        </div>
+      </div>
+      <img src="black.jpg" alt="Banner" />
+      <h1 class="banner-title">BSD</h1>
+    </div>
+
+    <!-- Filters + Price & Area Filters -->
+    <div class="filters" id="filters">
+      <button id="btn-all" onclick="filterCategory('all')" class="active">Show All</button>
+      <button id="btn-bsd" onclick="filterCategory('bsd')">BSD</button>
+      <button id="btn-gs" onclick="filterCategory('gs')">GS</button>
+      <button id="btn-alsut" onclick="filterCategory('alsut')">Alsut</button>
+
+      <div class="price-filter-container" id="price-container">
+        <button type="button" id="price-filter-btn" onclick="togglePriceDropdown()">
+          🔽 Price
+        </button>
+        <div id="price-dropdown" class="price-dropdown">
+          <label>
+            Min price:
+            <div style="display: flex; align-items: center;">
+              <span style="margin-right: 4px;">Rp.</span>
+              <input type="number" id="min-price" placeholder="0" style="flex: 1;" />
+              <span style="margin-left: 4px;">M</span>
+            </div>
+          </label>
+          <label>
+            Max price:
+            <div style="display: flex; align-items: center;">
+              <span style="margin-right: 4px;">Rp.</span>
+              <input type="number" id="max-price" placeholder="100" style="flex: 1;" />
+              <span style="margin-left: 4px;">M</span>
+            </div>
+          </label>
+          <button type="button" onclick="applyPriceFilter()">Apply</button>
+          <button type="button" onclick="clearPriceFilter()">Clear</button>
+        </div>
+      </div>      
+
+      <div class="area-filter-container" id = "area-container">
+        <button type="button" id="area-filter-btn" onclick="toggleAreaDropdown()">
+          🔽 Area
+        </button>
+        <div id="area-dropdown" class="area-dropdown">
+          <label>
+            Min area (m^2):
+            <input type="number" id="min-area" placeholder="0" />
+          </label>
+          <label>
+            Max area (m^2):
+            <input type="number" id="max-area" placeholder="10000" />
+          </label>
+          <button type="button" onclick="applyAreaFilter()">Apply</button>
+          <button type="button" onclick="clearAreaFilter()">Clear</button>
+        </div>
+      </div>
+      <!-- Add these buttons in your HTML, within the filters section -->
+      <div class="type-filter-container" id="type-container">
+        <button type="button" id="type-filter-btn" onclick="toggleTypeDropdown()">🔽 Type</button>
+        <div id="type-dropdown" class="type-dropdown">
+          <label><input type="radio" name="type" value="all" onclick="selectType('all')" checked> All Types</label>
+          <label><input type="radio" name="type" value="house" onclick="selectType('house')"> House</label>
+          <label><input type="radio" name="type" value="apartment" onclick="selectType('apartment')"> Apartment</label>
+        </div>
+      </div>      
+      
+    </div>
+
+    <!-- Catalogue List -->
+    <div id="catalogue" class="catalogue"></div>
+    <div id="spacer" style="height: 0;"></div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Example 1</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- No need for the template here anymore -->
+  <div id="content"></div>
+
+  <script type="application/json" id="page-data">
+  {
+    "sections": {
+      "mountain": {
+        "title": "Mountain Retreat",
+        "images": [
+          "https://picsum.photos/id/1043/600/400",
+          "https://picsum.photos/id/1056/600/400",
+          "https://picsum.photos/id/1062/600/400"
+        ],
+        "description": "Escape to the serene mountains. Crisp air, stunning vistas, and cozy cabins await."
+      },
+      "forest": {
+        "title": "Forest Getaway",
+        "images": [
+          "https://picsum.photos/id/1050/600/400",
+          "https://picsum.photos/id/1065/600/400",
+          "https://picsum.photos/id/1070/600/400"
+        ],
+        "description": "Wander through towering trees, listen to birdsong, and find peace among the pines."
+      }
+    }
+  }
+  </script>
+
+  <script src="app.js"></script>
+</body>
+</html>
